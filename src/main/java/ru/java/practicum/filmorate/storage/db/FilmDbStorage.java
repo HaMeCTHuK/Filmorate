@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
 import ru.java.practicum.filmorate.exception.DataNotFoundException;
+import ru.java.practicum.filmorate.model.Director;
 import ru.java.practicum.filmorate.model.Film;
 import ru.java.practicum.filmorate.model.Genre;
 import ru.java.practicum.filmorate.model.Mpa;
@@ -32,10 +33,17 @@ public class FilmDbStorage implements FilmStorage {
             .usingGeneratedKeyColumns("id");
 
         Number filmId = simpleJdbcInsert.executeAndReturnKey(getParams(film)); // Получаем id из таблицы при создании
-        film.setId(filmId.intValue());
+        film.setId(filmId.longValue());
 
         // Добавляем информацию о жанрах в таблицу FILM_GENRE
-        addGenresForFilm((long) filmId.intValue(), film.getGenres());
+        addGenresForFilm(filmId.longValue(), film.getGenres());
+        // Добавляем информацию о жанрах в таблицу FILM_DIRECTORS
+        addDirectorForFilm(filmId.longValue(),film.getDirectors());
+
+        // Заполняем жанры и режиссеров
+        film.setGenres(getGenresForFilm(filmId.longValue()));
+        film.setDirectors(getDirectorsForFilm(filmId.longValue()));
+
         Mpa mpa = getMpaRating(film.getMpa());  // Получаем MPA из базы данных
         film.getMpa().setName(mpa.getName());  // Устанавливаем имя рейтинга MPA в объекте Film
         log.info("Добавлен объект: " + film);
@@ -73,8 +81,22 @@ public class FilmDbStorage implements FilmStorage {
             }
         }
 
+        // Удаляем устаревших режисеров
+        String deleteDirectorSql = "DELETE FROM FILM_DIRECTOR WHERE film_id = ?";
+        jdbcTemplate.update(deleteDirectorSql, film.getId());
+        // Добавляем новых режисеров (если они не дублируются)
+        Set<Long> existingDirectorIds = new HashSet<>();
+        for (Director director : film.getDirectors()) {
+            if (!existingDirectorIds.contains(director.getId())) {
+                existingDirectorIds.add(director.getId());
+                jdbcTemplate.update("INSERT INTO FILM_DIRECTOR (film_id, director_id) VALUES (?, ?)", film.getId(), director.getId());
+            }
+        }
+
         // Получаем обновленные жанры
         film.setGenres(getGenresForFilm(film.getId()));
+        // Получаем обновленных режиссеров
+        film.setDirectors(getDirectorsForFilm(film.getId()));
 
         log.info("Обновлен объект: " + film);
         return film;
@@ -83,12 +105,21 @@ public class FilmDbStorage implements FilmStorage {
     // Метод для получения списка всех фильмов
     @Override
     public List<Film> getAll() {
-        String sql = "SELECT f.*, m.rating_name AS mpa_rating_name, g.genre_name, fg.genre_id " +
+        String sql = "SELECT f.*, m.rating_name AS mpa_rating_name " +
                 "FROM FILMS f " +
-                "LEFT JOIN MPARating m ON f.mpa_rating_id = m.id " +
-                "LEFT JOIN FILM_GENRE fg ON f.id = fg.film_id " +
-                "LEFT JOIN GENRES g ON fg.genre_id = g.id";
-        return jdbcTemplate.query(sql, FilmDbStorage::createFilm);
+                "LEFT JOIN MPARating m ON f.mpa_rating_id = m.id";
+        List<Film> films = jdbcTemplate.query(sql, FilmDbStorage::createFilm);
+
+        // Добавляем жанры и режиссеров к каждому фильму
+        for (Film film : films) {
+            List<Genre> genres = getGenresForFilm(film.getId());
+            List<Director> directors = getDirectorsForFilm(film.getId());
+
+            film.setGenres(genres);
+            film.setDirectors(directors);
+        }
+
+        return films;
     }
 
     // Метод для получения конкретного фильма по его идентификатору
@@ -98,6 +129,8 @@ public class FilmDbStorage implements FilmStorage {
                 "LEFT JOIN MPARating ON FILMS.mpa_rating_id = MPARating.id " +
                 "LEFT JOIN FILM_GENRE ON FILMS.id = FILM_GENRE.film_id " +
                 "LEFT JOIN GENRES ON FILM_GENRE.genre_id = GENRES.id " +
+                "LEFT JOIN FILM_DIRECTOR ON FILMS.id = FILM_DIRECTOR.film_id " +
+                "LEFT JOIN DIRECTORS ON FILM_DIRECTOR.director_id = DIRECTORS.id " +
                 "WHERE FILMS.id = ?";
 
         SqlRowSet resultSet = jdbcTemplate.queryForRowSet(sql, id);
@@ -105,6 +138,11 @@ public class FilmDbStorage implements FilmStorage {
         List<Genre> genres = new ArrayList<>();
         if (!getGenresForFilm(id).isEmpty()) {
             genres = getGenresForFilm(id);
+        }
+
+        List<Director> directors = new ArrayList<>();
+        if (!getDirectorsForFilm(id).isEmpty()) {
+            directors = getDirectorsForFilm(id);
         }
 
         if (resultSet.next()) {
@@ -123,11 +161,16 @@ public class FilmDbStorage implements FilmStorage {
                             Genre.builder()
                                     .id(resultSet.getLong("id"))
                                     .name(resultSet.getString("genre_name"))
-                                    .build()
-                    ))
+                                    .build()))
+                    .directors(Collections.singletonList(
+                                    Director.builder()
+                                            .id(resultSet.getLong("id"))
+                                            .name(resultSet.getString("director_name"))
+                                            .build()))
                     .build();
 
             film.setGenres(genres);
+            film.setDirectors(directors);
             log.info("Найден фильм: {} {}", film.getId(), film.getName());
             return film;
         } else {
@@ -166,20 +209,18 @@ public class FilmDbStorage implements FilmStorage {
                 "duration", film.getDuration(),
                 "rating", film.getRating(),
                 "mpa_rating_id", film.getMpa().getId(),
-                "genres", film.getGenres()
+                "genres", film.getGenres(),
+                "directors", film.getDirectors()
 
         );
         return params;
     }
 
-   // Вспомогательный метод для создания объекта Film из ResultSet
+    // Вспомогательный метод для создания объекта Film из ResultSet
     public static Film createFilm(ResultSet rs, int rowNum) throws SQLException {
         Mpa mpa = createMpa(rs, rowNum);
 
-        Long genreId = rs.getLong("genre_id");
-        Genre genre = genreId != 0 ? createGenre(rs, rowNum) : null;
-
-        Film film = Film.builder()
+        return Film.builder()
                 .id(rs.getLong("id"))
                 .name(rs.getString("name"))
                 .description(rs.getString("description"))
@@ -187,10 +228,7 @@ public class FilmDbStorage implements FilmStorage {
                 .duration(rs.getInt("duration"))
                 .rating(rs.getInt("rating"))
                 .mpa(mpa)
-                .genres(genre != null ? Collections.singletonList(genre) : Collections.emptyList())
                 .build();
-
-        return film;
     }
 
     // Метод для получения информации о MPA рейтинге по его идентификатору
@@ -240,6 +278,14 @@ public class FilmDbStorage implements FilmStorage {
                 .build();
     }
 
+    // Вспомогательный метод для создания объекта Director из ResultSet
+    static Director createDirector(ResultSet rs, int rowNum) throws SQLException {
+        return Director.builder()
+                .id(rs.getLong("director_id"))
+                .name(rs.getString("director_name"))
+                .build();
+    }
+
     // Метод для добавления информации о жанрах в таблицу FILM_GENRE
     private void addGenresForFilm(Long filmId, List<Genre> genres) {
 
@@ -249,6 +295,32 @@ public class FilmDbStorage implements FilmStorage {
                 jdbcTemplate.update("INSERT INTO FILM_GENRE (film_id, genre_id) VALUES (?, ?)",
                         filmId, genre.getId());
             }
+        }
+    }
+
+    // Метод для добавления информации о жанрах в таблицу FILM_DIRECTOR
+    private void addDirectorForFilm(Long filmId, List<Director> directors) {
+
+        // Добавляем информацию о новых жанрах в таблицу FILM_DIRECTOR
+        if (directors != null && !directors.isEmpty()) {
+            for (Director director : directors) {
+                jdbcTemplate.update("INSERT INTO FILM_DIRECTOR (film_id, director_id) VALUES (?, ?)",
+                        filmId, director.getId());
+            }
+        }
+    }
+
+    // Метод для получения информации о DIRECTORS по идентификатору фильма
+    private List<Director> getDirectorsForFilm(Long filmId) {
+        String directorsSql = "SELECT d.id as director_id, d.director_name " +
+                "FROM FILM_DIRECTOR fd " +
+                "JOIN DIRECTORS d ON fd.director_id = d.id " +
+                "WHERE fd.film_id = ?";
+        try {
+            return jdbcTemplate.query(directorsSql, DirectorDbStorage::createDirector, filmId);
+        } catch (DataNotFoundException e) {
+            // Если режиссеров нет, возвращаем пустой список
+            return Collections.emptyList();
         }
     }
 }

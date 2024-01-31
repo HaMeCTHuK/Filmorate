@@ -4,9 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.java.practicum.filmorate.model.Film;
+import ru.java.practicum.filmorate.service.DirectorService;
 import ru.java.practicum.filmorate.service.FilmService;
 
 import javax.validation.Valid;
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -16,6 +18,7 @@ import java.util.List;
 public class FilmController {
 
     private final FilmService filmService;
+    private final DirectorService directorService;
 
     @PostMapping
     public Film createFilm(@RequestBody @Valid Film film) {
@@ -65,5 +68,15 @@ public class FilmController {
     public List<Film> getPopularFilms(@RequestParam(defaultValue = "10") int count) {
         log.info("Пытаемся получить самые залайканые фильмы количеством: {} шт.", count);
         return filmService.getPopularFilms(count);
+    }
+
+    //GET /films/director/{directorId}?sortBy=[year,likes]
+    //Возвращает список фильмов режиссера отсортированных по количеству лайков или году выпуска.
+
+    @GetMapping("/director/{directorId}")
+    public List<Film> getSortedDirectorList(@PathVariable Long directorId,
+                                            @RequestParam(required = false) String sortBy) {
+        log.info("Возвращает список фильмов режиссера отсортированных по количеству лайков или году выпуска.");
+        return directorService.getSortedDirectorList(directorId, sortBy);
     }
 }

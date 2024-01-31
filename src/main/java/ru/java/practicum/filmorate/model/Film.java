@@ -36,8 +36,6 @@ public class Film extends BaseUnit {
     private Mpa mpa;
     @NotNull
     private List<Genre> genres = new ArrayList<>();
-    @NotNull
-    private List<Director> directors = new ArrayList<>();
     @JsonIgnore
     private Long likes = 0L;
 

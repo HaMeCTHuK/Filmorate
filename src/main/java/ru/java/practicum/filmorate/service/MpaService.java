@@ -11,7 +11,9 @@ import java.util.List;
 @Slf4j
 public class MpaService extends AbstractService<Mpa> {
 
+    private final MpaStorage mpaStorage; //добавлено для работоспособности тестов
     public MpaService(MpaStorage mpaStorage) {
+        this.mpaStorage = mpaStorage; //добавлено для работоспособности тестов
         this.abstractStorage = mpaStorage;
     }
 
@@ -36,5 +38,11 @@ public class MpaService extends AbstractService<Mpa> {
     @Override
     public void validateParameters(Long id, Long otherId) {
         throw new UnsupportedOperationException();
+    }
+
+    public Mpa createMpa(int id, String name) {
+        return mpaStorage.create(Mpa.builder().id(id).name(name).build());
+        //Mpa mpa = Mpa.builder().id(id).name(name).build();
+        //return create(mpa);
     }
 }

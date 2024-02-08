@@ -7,13 +7,13 @@ import lombok.experimental.SuperBuilder;
 
 import javax.validation.constraints.NotBlank;
 
-
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
 @NoArgsConstructor
-public class Mpa extends BaseUnit {
+public class Director extends BaseUnit {
+
     @NotBlank
-    private String name;
+    String name;
 
 }

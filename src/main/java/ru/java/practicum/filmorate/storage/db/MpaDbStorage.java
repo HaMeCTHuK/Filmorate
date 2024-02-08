@@ -63,6 +63,10 @@ public class MpaDbStorage implements MpaStorage {
         return mpas.get(0);
     }
 
+    @Override //добавлено для работоспособности тестов
+    public Mpa createMpa(int id, String name) {
+        return create(Mpa.builder().id(id).name(name).build());
+    }
     // Вспомогательный метод для создания объекта MPA из ResultSet
     static Mpa createMpa(ResultSet rs, int rowNum) throws SQLException {
         return Mpa.builder()

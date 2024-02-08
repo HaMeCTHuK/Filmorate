@@ -1,6 +1,7 @@
 package ru.java.practicum.filmorate.storage.db;
 
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
@@ -16,12 +17,16 @@ import static org.junit.jupiter.api.Assertions.*;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class MpaDbStorageTest {
 
-    @Autowired
     private final JdbcTemplate jdbcTemplate;
+    private MpaDbStorage mpaStorage;
+
+    @BeforeEach
+    void init() {
+        mpaStorage = new MpaDbStorage(jdbcTemplate);
+    }
 
     @Test
     void getAll() {
-        MpaDbStorage mpaStorage = new MpaDbStorage(jdbcTemplate);
 
         List<Mpa> mpas = mpaStorage.getAll();
         assertNotNull(mpas);
@@ -30,7 +35,6 @@ class MpaDbStorageTest {
 
     @Test
     void get() {
-        MpaDbStorage mpaStorage = new MpaDbStorage(jdbcTemplate);
         Mpa existingMpa = mpaStorage.getAll().get(0);
 
         Mpa retrievedMpa = mpaStorage.get(existingMpa.getId());
@@ -46,7 +50,6 @@ class MpaDbStorageTest {
 
     @Test
     void create() {
-        MpaDbStorage mpaStorage = new MpaDbStorage(jdbcTemplate);
         Mpa newMpa = Mpa.builder().id(7).name("New Mpa").build();
         Mpa createdMpa = mpaStorage.create(newMpa);
 
@@ -57,7 +60,6 @@ class MpaDbStorageTest {
 
     @Test
     void update() {
-        MpaDbStorage mpaStorage = new MpaDbStorage(jdbcTemplate);
         Mpa existingMpa = mpaStorage.getAll().get(0);
         String updatedName = "Updated Mpa";
 
@@ -70,7 +72,6 @@ class MpaDbStorageTest {
 
     @Test
     void delete() {
-        MpaDbStorage mpaStorage = new MpaDbStorage(jdbcTemplate);
         Mpa newMpa = Mpa.builder().name("ToDelete Mpa").build();
         Mpa createdMpa = mpaStorage.create(newMpa);
 

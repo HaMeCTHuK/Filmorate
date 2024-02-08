@@ -21,10 +21,6 @@ public class GenreService extends AbstractService<Genre> {
         return abstractStorage.getAll();
     }
 
-    public Genre getGenre(long id) {
-        return abstractStorage.get(id);
-    }
-
     @Override
     public void validate(Genre data) {
         throw new UnsupportedOperationException();

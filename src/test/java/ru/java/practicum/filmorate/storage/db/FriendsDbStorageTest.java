@@ -1,6 +1,7 @@
 package ru.java.practicum.filmorate.storage.db;
 
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
@@ -16,8 +17,15 @@ import static org.junit.jupiter.api.Assertions.*;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class FriendsDbStorageTest {
 
-    @Autowired
     private final JdbcTemplate jdbcTemplate;
+    private UserDbStorage userStorage;
+    private FriendsDbStorage friendsDbStorage;
+
+    @BeforeEach
+    void init() {
+        userStorage = new UserDbStorage(jdbcTemplate);
+        friendsDbStorage = new FriendsDbStorage(jdbcTemplate);
+    }
 
     @Test
     void getAllFriendsEmpty() {
@@ -33,9 +41,6 @@ class FriendsDbStorageTest {
                 "Petruxa",
                 "Boroda pivnaya",
                 LocalDate.of(2004, 1, 1));
-
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
-        FriendsDbStorage friendsDbStorage = new FriendsDbStorage(jdbcTemplate);
 
         User createdUser = userStorage.create(newUser);
         User createdUser2 = userStorage.create(newUser2);
@@ -71,9 +76,6 @@ class FriendsDbStorageTest {
                 "pivo vodka",
                 LocalDate.of(2014, 2, 4));
 
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
-        FriendsDbStorage friendsDbStorage = new FriendsDbStorage(jdbcTemplate);
-
         User createdUser = userStorage.create(newUser);
         User createdUser2 = userStorage.create(newUser2);
         User createdUser3 = userStorage.create(newUser3);
@@ -107,9 +109,6 @@ class FriendsDbStorageTest {
                 "tras",
                 "pivo vodka",
                 LocalDate.of(2014, 2, 4));
-
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
-        FriendsDbStorage friendsDbStorage = new FriendsDbStorage(jdbcTemplate);
 
         User createdUser = userStorage.create(newUser);
         User createdUser2 = userStorage.create(newUser2);
@@ -147,9 +146,6 @@ class FriendsDbStorageTest {
                 "pivo vodka",
                 LocalDate.of(2014, 2, 4));
 
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
-        FriendsDbStorage friendsDbStorage = new FriendsDbStorage(jdbcTemplate);
-
         User createdUser = userStorage.create(newUser);
         User createdUser2 = userStorage.create(newUser2);
         User createdUser3 = userStorage.create(newUser3);
@@ -186,9 +182,6 @@ class FriendsDbStorageTest {
                 "tras",
                 "pivo vodka",
                 LocalDate.of(2014, 2, 4));
-
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
-        FriendsDbStorage friendsDbStorage = new FriendsDbStorage(jdbcTemplate);
 
         User createdUser = userStorage.create(newUser);
         User createdUser2 = userStorage.create(newUser2);

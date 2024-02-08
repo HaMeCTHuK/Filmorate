@@ -2,6 +2,7 @@ package ru.java.practicum.filmorate.storage.db;
 
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
@@ -20,6 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class UserDbStorageTest {
 
     private final JdbcTemplate jdbcTemplate;
+    private UserDbStorage userStorage;
+
+    @BeforeEach
+    void init () {
+      userStorage = new UserDbStorage(jdbcTemplate);
+    }
 
     @Test
     public void testFindUserById() {
@@ -29,7 +36,7 @@ class UserDbStorageTest {
                 "vanya123",
                 "Ivan Petrov",
                 LocalDate.of(1990, 1, 1));
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
+
         userStorage.create(newUser);
 
         // вызываем тестируемый метод
@@ -50,7 +57,7 @@ class UserDbStorageTest {
                 "vanya123",
                 "Ivan Petrov",
                 LocalDate.of(1990, 1, 1));
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
+
         User savedUser = userStorage.create(newUser);
 
         // Меняем некоторые данные
@@ -82,7 +89,7 @@ class UserDbStorageTest {
                 "user2",
                 "User Two",
                 LocalDate.of(1995, 5, 5));
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
+
         userStorage.create(user1);
         userStorage.create(user2);
 
@@ -104,7 +111,7 @@ class UserDbStorageTest {
                 "vanya123",
                 "Ivan Petrov",
                 LocalDate.of(1990, 1, 1));
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
+
         User savedUser = userStorage.create(newUser);
 
         // Вызываем тестируемый метод

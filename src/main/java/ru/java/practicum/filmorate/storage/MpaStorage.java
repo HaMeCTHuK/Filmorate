@@ -10,5 +10,4 @@ public interface MpaStorage extends AbstractStorage<Mpa> {
 
     Mpa get(Long id);
 
-    Mpa createMpa(int id, String name); // добавлено для работоспособности тестов
 }

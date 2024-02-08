@@ -1,6 +1,7 @@
 package ru.java.practicum.filmorate.storage.db;
 
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
@@ -18,12 +19,24 @@ import static org.junit.jupiter.api.Assertions.*;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class LikesDbStorageTest {
 
-    @Autowired
     private final JdbcTemplate jdbcTemplate;
+    private DirectorDbStorage directorDbStorage;
+    private LikesDbStorage likesDbStorage;
+    private FilmDbStorage filmStorage;
+    private UserDbStorage userStorage;
+
+
+    @BeforeEach
+    void init() {
+        GenreDbStorage genreDbStorage = new GenreDbStorage(jdbcTemplate);
+        directorDbStorage = new DirectorDbStorage(jdbcTemplate, genreDbStorage);
+        likesDbStorage = new LikesDbStorage(jdbcTemplate, genreDbStorage, directorDbStorage);
+        filmStorage = new FilmDbStorage(jdbcTemplate, likesDbStorage, directorDbStorage, genreDbStorage);
+        userStorage = new UserDbStorage(jdbcTemplate);
+    }
 
     @Test
     void addLike() {
-        LikesDbStorage likesDbStorage = new LikesDbStorage(jdbcTemplate);
 
         Film newFilm = new Film(
                 "testFilm2",
@@ -36,7 +49,6 @@ class LikesDbStorageTest {
 
         newFilm.getMpa().setId(2);
 
-        FilmDbStorage filmStorage = new FilmDbStorage(jdbcTemplate);
         Film createdFilm = filmStorage.create(newFilm);
 
         User newUser = new User(
@@ -55,15 +67,12 @@ class LikesDbStorageTest {
         likesDbStorage.addLike(filmId, userId);
 
         // Проверяем лайк
-        int likesCount = likesDbStorage.getLikesCountForFilm(filmId);
+        long likesCount = likesDbStorage.getLikesCountForFilm(filmId);
         assertEquals(1, likesCount);
     }
 
     @Test
     void deleteLike() {
-        LikesDbStorage likesDbStorage = new LikesDbStorage(jdbcTemplate);
-        FilmDbStorage filmStorage = new FilmDbStorage(jdbcTemplate);
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
 
         Film newFilm = new Film(
                 "testFilm2",
@@ -95,15 +104,12 @@ class LikesDbStorageTest {
         likesDbStorage.deleteLike(filmId, userId);
 
         // Проверяем что лайк удален
-        int likesCount = likesDbStorage.getLikesCountForFilm(filmId);
+        long likesCount = likesDbStorage.getLikesCountForFilm(filmId);
         assertEquals(0, likesCount);
     }
 
     @Test
     void getLikesCountForFilm() {
-        LikesDbStorage likesDbStorage = new LikesDbStorage(jdbcTemplate);
-        FilmDbStorage filmStorage = new FilmDbStorage(jdbcTemplate);
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
 
         Film newFilm = new Film(
                 "testFilm2",
@@ -143,15 +149,12 @@ class LikesDbStorageTest {
         likesDbStorage.addLike(filmId, userId2);
 
         // Проверяем количество лайков фильма
-        int likesCount = likesDbStorage.getLikesCountForFilm(filmId);
+        long likesCount = likesDbStorage.getLikesCountForFilm(filmId);
         assertEquals(2, likesCount);
     }
 
     @Test
     void getAllFilmLikes() {
-        LikesDbStorage likesDbStorage = new LikesDbStorage(jdbcTemplate);
-        FilmDbStorage filmStorage = new FilmDbStorage(jdbcTemplate);
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
 
         Film newFilm = new Film(
                 "testFilm1",
@@ -202,9 +205,6 @@ class LikesDbStorageTest {
 
     @Test
     void getPopularFilms() {
-        LikesDbStorage likesDbStorage = new LikesDbStorage(jdbcTemplate);
-        FilmDbStorage filmStorage = new FilmDbStorage(jdbcTemplate);
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate);
 
         Film newFilm = new Film(
                 "testFilm2",

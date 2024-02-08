@@ -29,7 +29,7 @@ public class GenreController {
     @GetMapping
     @RequestMapping("/{id}")
     public Genre getGenre(@PathVariable long id) {
-        Genre genre = genreService.getGenre(id);
+        Genre genre = genreService.getData(id);
         log.info("Получаем рейтинг МРА по айди");
         return genre;
     }
